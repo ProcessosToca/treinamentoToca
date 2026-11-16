@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Projeto Estoque Toca</title>
+<style>
+  :root {
+    --papel: #FFFFFF;
+    --fundo: #F4F4F4;
+    --linha: #E2E2E2;
+    --suave: #6B6B6B;
+    --tinta: #2B2B2B;
+    --toca: #AA1818;
+    --toca-escuro: #8C1212;
+    --feito: #2E7D32;
+    --feito-fundo: #EAF4EB;
+    --raio: 10px;
+    --topo: 60px;
+    --lateral: 272px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: calc(var(--topo) + 16px); }
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--tinta);
+    background: var(--fundo);
+    -webkit-text-size-adjust: 100%;
+  }
+  h1, h2, h3, p, ul, ol { margin: 0; }
+  ul, ol { padding: 0; list-style: none; }
+  a { color: var(--toca); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; border-radius: 4px; }
+
+  /* ---------- Cabeçalho ---------- */
+  .topo {
+    position: fixed; inset: 0 0 auto 0; height: var(--topo); z-index: 30;
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 20px;
+    background: var(--papel);
+    border-bottom: 1px solid var(--linha);
+  }
+  .marca { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--tinta); min-width: 0; }
+  .marca img { height: 34px; width: auto; display: block; }
+  .marca .nome-toca { font-weight: 700; font-size: 19px; letter-spacing: -0.02em; color: var(--toca); white-space: nowrap; }
+  .marca .projeto { padding-left: 12px; border-left: 1px solid var(--linha); font-size: 15px; color: var(--suave); white-space: nowrap; }
+  .topo .espaco { flex: 1; }
+  .andamento { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--suave); white-space: nowrap; }
+  .barra { width: 120px; height: 6px; border-radius: 99px; background: var(--linha); overflow: hidden; }
+  .barra i { display: block; height: 100%; width: 0; background: var(--feito); border-radius: 99px; transition: width .3s ease; }
+  .botao {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--linha);
+    background: var(--papel); font-size: 14px; font-weight: 700; text-decoration: none; color: var(--tinta);
+  }
+  .botao:hover { border-color: #BDBDBD; }
+  .botao.principal { background: var(--toca); border-color: var(--toca); color: #fff; }
+  .botao.principal:hover { background: var(--toca-escuro); border-color: var(--toca-escuro); }
+  .botao-menu { display: none; }
+
+  /* ---------- Menu lateral ---------- */
+  .lateral {
+    position: fixed; top: var(--topo); bottom: 0; left: 0; width: var(--lateral); z-index: 20;
+    overflow-y: auto; padding: 20px 0 32px;
+    background: var(--papel); border-right: 1px solid var(--linha);
+  }
+  .lateral .grupo { padding: 0 20px 6px; margin-top: 18px; font-size: 13px; color: var(--suave); }
+  .lateral .grupo:first-child { margin-top: 0; }
+  .lateral a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px 9px 17px; border-left: 3px solid transparent;
+    color: var(--tinta); text-decoration: none; font-size: 15px; line-height: 1.3;
+  }
+  .lateral a:hover { background: var(--fundo); }
+  .lateral a[aria-current="page"] { border-left-color: var(--toca); background: var(--fundo); font-weight: 700; }
+  .lateral .fase-n {
+    flex: none; width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 12px; font-weight: 700;
+    border: 1.5px solid #BDBDBD; color: var(--suave); background: var(--papel);
+  }
+  .lateral a.completa .fase-n { background: var(--feito); border-color: var(--feito); color: #fff; }
+  .lateral .rotulo { flex: 1; min-width: 0; }
+  .lateral .conta { font-size: 12px; color: var(--suave); font-weight: 400; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Área principal ---------- */
+  main { margin-left: var(--lateral); padding: calc(var(--topo) + 36px) 40px 80px; outline: none; }
+  .folha { max-width: 860px; }
+  .folha.larga { max-width: 1040px; }
+  h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; letter-spacing: -0.03em; }
+  h2 { font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; margin-top: 44px; }
+  h3 { font-size: 17px; line-height: 1.3; }
+  .abre { font-size: 18px; color: #4A4A4A; margin-top: 14px; max-width: 62ch; }
+  .texto { max-width: 68ch; margin-top: 12px; }
+  .miudo { font-size: 14px; color: var(--suave); }
+
+  /* Início */
+  .capa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 40px; align-items: center; }
+  .capa .acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .proximo { margin-top: 22px; padding: 14px 16px; border-radius: var(--raio); background: var(--papel); border: 1px solid var(--linha); font-size: 15px; }
+  .proximo b { display: block; font-size: 13px; font-weight: 400; color: var(--suave); }
+  .nome-campo { margin-top: 18px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--suave); }
+  .nome-campo input { font: inherit; font-size: 15px; color: var(--tinta); padding: 7px 10px; border: 1px solid #CFCFCF; border-radius: 8px; width: 200px; background: var(--papel); }
+
+  .trilha { margin-top: 18px; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); overflow: hidden; }
+  .trilha a { display: grid; grid-template-columns: 34px minmax(0, 1fr) 150px; gap: 14px; align-items: center; padding: 14px 18px; text-decoration: none; color: var(--tinta); border-top: 1px solid var(--linha); }
+  .trilha a:first-child { border-top: 0; }
+  .trilha a:hover { background: #FAFAFA; }
+  .trilha .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; border: 1.5px solid #BDBDBD; color: var(--suave); }
+  .trilha a.completa .n { background: var(--feito); border-color: var(--feito); color: #fff; }
+  .trilha .t { font-weight: 700; }
+  .trilha .s { font-size: 14px; color: var(--suave); }
+  .trilha .p { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .trilha .p .barra { flex: 1; width: auto; }
+
+  .regras { margin-top: 16px; display: grid; gap: 10px; max-width: 68ch; }
+  .regras li { padding-left: 18px; position: relative; }
+  .regras li::before { content: ""; position: absolute; left: 0; top: .62em; width: 7px; height: 7px; border-radius: 50%; background: var(--toca); }
+
+  /* Destaque */
+  .destaque { margin-top: 20px; padding: 16px 18px; background: var(--papel); border-left: 4px solid var(--toca); border-radius: 0 var(--raio) var(--raio) 0; max-width: 68ch; }
+
+  /* Bloco para copiar */
+  .copiavel { margin-top: 16px; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); max-width: 76ch; }
+  .copiavel pre { margin: 0; padding: 18px; white-space: pre-wrap; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.55; }
+  .copiavel .pe { display: flex; justify-content: flex-end; padding: 10px 12px; border-top: 1px solid var(--linha); background: #FAFAFA; border-radius: 0 0 var(--raio) var(--raio); }
+
+  .duas { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 860px; }
+  .lista-pode { background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: 16px 18px; }
+  .lista-pode h3 { margin-bottom: 8px; }
+  .lista-pode.sim h3 { color: var(--feito); }
+  .lista-pode.nao h3 { color: var(--toca); }
+  .lista-pode li { padding: 7px 0; border-top: 1px solid var(--linha); font-size: 15px; }
+  .lista-pode li:first-child { border-top: 0; }
+
+  /* Cores */
+  .proporcao { margin-top: 18px; display: flex; height: 54px; border-radius: var(--raio); overflow: hidden; border: 1px solid var(--linha); max-width: 760px; }
+  .proporcao span { display: flex; align-items: flex-end; padding: 6px 10px; font-size: 12px; }
+  .cores { margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 760px; }
+  .cor { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; text-align: left; padding: 0; border: 1px solid var(--linha); border-radius: var(--raio); background: var(--papel); overflow: hidden; }
+  .cor:hover { border-color: #BDBDBD; }
+  .cor i { display: block; height: 74px; border-bottom: 1px solid var(--linha); }
+  .cor b { display: block; padding: 10px 12px 0; font-size: 15px; }
+  .cor code { display: block; padding: 0 12px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: var(--suave); }
+  .cor small { display: block; padding: 6px 12px 12px; font-size: 13px; color: var(--suave); line-height: 1.35; }
+
+  /* ---------- Telas esperadas (mockups) ---------- */
+  .abas { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .abas button { padding: 8px 14px; border-radius: 99px; border: 1px solid var(--linha); background: var(--papel); font-size: 14px; }
+  .abas button[aria-selected="true"] { background: var(--tinta); border-color: var(--tinta); color: #fff; font-weight: 700; }
+  .vitrine { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .precisa { background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: 16px 18px; }
+  .precisa li { padding: 8px 0 8px 22px; border-top: 1px solid var(--linha); font-size: 15px; position: relative; }
+  .precisa li:first-child { border-top: 0; }
+  .precisa li::before { content: ""; position: absolute; left: 2px; top: 1.05em; width: 9px; height: 5px; border-left: 2px solid var(--toca); border-bottom: 2px solid var(--toca); transform: rotate(-45deg); }
+
+  .mock { container-type: inline-size; border: 1px solid #CFCFCF; border-radius: 12px; overflow: hidden; background: var(--papel); }
+  .mock-barra { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #EDEDED; border-bottom: 1px solid #D6D6D6; }
+  .mock-barra i { width: 9px; height: 9px; border-radius: 50%; background: #C4C4C4; }
+  .mock-barra span { margin-left: 8px; flex: 1; padding: 3px 10px; border-radius: 99px; background: var(--papel); font-size: 11px; color: var(--suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mock-tela { font-size: clamp(5px, 1.55cqw, 13px); aspect-ratio: 16 / 10; display: flex; flex-direction: column; background: #F4F4F4; color: #333; line-height: 1.35; overflow: hidden; }
+  .m-topo { flex: none; height: 4.4em; display: flex; align-items: center; gap: 1.2em; padding: 0 1.8em; background: #fff; border-bottom: 1px solid #E2E2E2; }
+  .m-logo { font-weight: 700; font-size: 1.35em; letter-spacing: -0.02em; color: #AA1818; }
+  .m-logo img { height: 2em; width: auto; display: block; }
+  .m-topo .m-sis { color: #6B6B6B; padding-left: 1.2em; border-left: 1px solid #E2E2E2; }
+  .m-topo .m-user { margin-left: auto; display: flex; align-items: center; gap: 1em; color: #6B6B6B; }
+  .m-topo .m-user b { color: #333; }
+  .m-corpo { flex: 1; display: flex; min-height: 0; }
+  .m-menu { flex: none; width: 15.5em; padding: 1.2em 0; background: #fff; border-right: 1px solid #E2E2E2; }
+  .m-menu span { display: block; padding: .8em 1.5em; border-left: .3em solid transparent; }
+  .m-menu span.ativo { border-left-color: #AA1818; background: #F4F4F4; font-weight: 700; }
+  .m-pag { flex: 1; min-width: 0; padding: 2em 2.4em; }
+  .m-cab { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4em; }
+  .m-cab b { font-size: 1.7em; letter-spacing: -0.02em; }
+  .m-btn { display: inline-block; padding: .7em 1.3em; border-radius: .6em; background: #AA1818; color: #fff; font-weight: 700; }
+  .m-btn.claro { background: #fff; color: #333; border: 1px solid #CFCFCF; }
+  .m-cartao { background: #fff; border: 1px solid #E2E2E2; border-radius: .9em; overflow: hidden; }
+  .m-tab { width: 100%; border-collapse: collapse; }
+  .m-tab th { text-align: left; padding: .8em 1.2em; background: #F4F4F4; font-size: .92em; color: #6B6B6B; font-weight: 700; }
+  .m-tab td { padding: .8em 1.2em; border-top: 1px solid #E2E2E2; }
+  .m-tab .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .m-tag { display: inline-block; margin-left: .6em; padding: .15em .7em; border-radius: 99px; background: #F7E3E3; color: #AA1818; font-size: .85em; font-weight: 700; }
+  .m-form { padding: 1.6em 1.8em; display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em 1.6em; }
+  .m-campo { display: grid; gap: .4em; }
+  .m-campo.inteiro { grid-column: 1 / -1; }
+  .m-campo label { font-size: .92em; color: #6B6B6B; }
+  .m-campo .cx { height: 2.9em; padding: 0 .9em; display: flex; align-items: center; justify-content: space-between; border: 1px solid #CFCFCF; border-radius: .6em; background: #fff; color: #9A9A9A; }
+  .m-campo .cx.cheia { color: #333; }
+  .m-acoes { grid-column: 1 / -1; display: flex; gap: .8em; }
+  .m-radios { display: flex; gap: 1.6em; height: 2.9em; align-items: center; }
+  .m-radios span { display: flex; align-items: center; gap: .5em; }
+  .m-radios i { width: 1.2em; height: 1.2em; border-radius: 50%; border: 1px solid #9A9A9A; background: #fff; }
+  .m-radios i.on { border: .38em solid #AA1818; }
+  .m-login { flex: 1; display: grid; place-items: center; }
+  .m-login .m-cartao { width: 27em; padding: 2.6em 2.4em; display: grid; gap: 1.2em; }
+  .m-login .m-logo { font-size: 1.9em; text-align: center; }
+  .m-login .m-logo img { height: 2.2em; margin: 0 auto; }
+  .m-login .sub { text-align: center; color: #6B6B6B; margin-top: -.6em; }
+  .m-login .m-btn { text-align: center; padding: .9em; }
+  .m-sub { margin: 1.4em 0 .7em; font-weight: 700; }
+
+  /* ---------- Fases e passos ---------- */
+  .fase-topo .selo { display: inline-block; font-size: 14px; color: var(--suave); margin-bottom: 8px; }
+  .fase-dados { margin-top: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); max-width: 860px; }
+  .fase-dados div { padding: 14px 18px; border-left: 1px solid var(--linha); }
+  .fase-dados div:first-child { border-left: 0; }
+  .fase-dados span { display: block; font-size: 13px; color: var(--suave); }
+  .fase-dados b { font-size: 15px; }
+  .aviso { margin-top: 18px; padding: 12px 16px; border-radius: var(--raio); background: #FFF6E5; border: 1px solid #F0DDB5; font-size: 15px; max-width: 860px; }
+
+  .passos { margin-top: 28px; position: relative; }
+  .passo { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 18px; padding-bottom: 26px; position: relative; }
+  .passo::before { content: ""; position: absolute; left: 25px; top: 52px; bottom: 0; width: 2px; background: var(--linha); }
+  .passo:last-child::before { display: none; }
+  .passo-num { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 15px; background: var(--papel); border: 2px solid #BDBDBD; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .passo.feito .passo-num { background: var(--feito); border-color: var(--feito); color: #fff; }
+  .passo.feito::before { background: var(--feito); }
+  .passo-corpo { background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: 18px 20px; min-width: 0; }
+  .passo.feito .passo-corpo { border-color: #BFDCC2; }
+  .passo-corpo .controle { display: inline-block; margin-bottom: 8px; padding: 2px 10px; border-radius: 99px; background: var(--tinta); color: #fff; font-size: 12px; font-weight: 700; }
+  .passo-corpo p { margin-top: 8px; max-width: 66ch; }
+  .passo-corpo code { font-family: Arial, Helvetica, sans-serif; font-weight: 700; background: var(--fundo); padding: 1px 6px; border-radius: 5px; font-size: .95em; }
+  .pronto { margin-top: 14px !important; padding: 10px 14px; background: var(--fundo); border-radius: 8px; font-size: 15px; }
+  .marcar { margin-top: 14px; display: inline-flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px; border: 1px solid #CFCFCF; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; user-select: none; background: var(--papel); }
+  .marcar input { width: 20px; height: 20px; margin: 0; accent-color: var(--feito); cursor: pointer; }
+  .passo.feito .marcar { background: var(--feito-fundo); border-color: #BFDCC2; color: var(--feito); }
+
+  .videos { margin-top: 14px; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); align-items: start; }
+  .video.tocando, .video.sem { grid-column: 1 / -1; }
+  .video { border: 1px solid var(--linha); border-radius: var(--raio); overflow: hidden; background: #1E1E1E; }
+  .video-capa { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; padding: 0; background: #1E1E1E center / cover no-repeat; color: #fff; text-align: left; }
+  .video-capa::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,.18) 60%); }
+  .video-capa .play { position: absolute; left: 50%; top: 40%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: var(--toca); display: grid; place-items: center; }
+  .video-capa .play::after { content: ""; margin-left: 5px; border-style: solid; border-width: 10px 0 10px 16px; border-color: transparent transparent transparent #fff; }
+  .video-capa:hover .play { background: var(--toca-escuro); }
+  .video-capa .legenda { position: absolute; left: 14px; right: 14px; bottom: 10px; }
+  .video-capa .legenda b { display: block; font-size: 15px; line-height: 1.25; }
+  .video-capa .legenda span { font-size: 13px; opacity: .85; }
+  .video iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; }
+  .video-pe { display: flex; justify-content: flex-end; gap: 12px; padding: 7px 12px; background: var(--papel); font-size: 13px; color: var(--suave); }
+  .video-pe a { color: var(--suave); }
+  .video.sem { background: var(--papel); padding: 14px 16px; font-size: 15px; }
+  .video.sem b { display: block; }
+
+  a.video-capa { text-decoration: none; }
+  /* Painel */
+  .fase-dados.quatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .hist { margin-top: 14px; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); max-width: 860px; }
+  .hist li { display: flex; justify-content: space-between; gap: 16px; padding: 11px 18px; border-top: 1px solid var(--linha); font-size: 15px; }
+  .hist li:first-child { border-top: 0; }
+  .hist time, .hist .quando { color: var(--suave); font-size: 14px; white-space: nowrap; }
+  .vazio { margin-top: 14px; padding: 16px 18px; background: var(--papel); border: 1px dashed #CFCFCF; border-radius: var(--raio); color: var(--suave); max-width: 860px; }
+  .diario { margin-top: 14px; max-width: 860px; }
+  .diario textarea { display: block; width: 100%; min-height: 120px; padding: 12px 14px; font: inherit; color: var(--tinta); background: var(--papel); border: 1px solid #CFCFCF; border-radius: var(--raio); resize: vertical; }
+  .diario .dia { margin-top: 10px; padding: 12px 16px; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); white-space: pre-wrap; font-size: 15px; }
+  .diario .dia b { display: block; font-size: 13px; font-weight: 400; color: var(--suave); }
+  .acoes-painel { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .acoes-painel input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .botao.perigo { color: var(--toca); }
+  .salvo-info { margin: 18px 20px 0; padding-top: 14px; border-top: 1px solid var(--linha); font-size: 13px; color: var(--suave); line-height: 1.4; }
+
+  .navega { margin-top: 12px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  .aviso-toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); padding: 10px 18px; border-radius: 99px; background: var(--tinta); color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; }
+  .aviso-toast.visivel { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- Telas menores ---------- */
+  @media (max-width: 980px) {
+    .botao-menu { display: inline-flex; }
+    .lateral { transform: translateX(-100%); transition: transform .2s ease; box-shadow: none; }
+    body.menu-aberto .lateral { transform: none; box-shadow: 0 0 0 100vmax rgba(0,0,0,.35); }
+    main { margin-left: 0; padding: calc(var(--topo) + 24px) 18px 64px; }
+    .capa, .vitrine, .duas { grid-template-columns: 1fr; }
+    .fase-dados.quatro { grid-template-columns: 1fr 1fr; }
+    .fase-dados.quatro div:nth-child(3) { border-left: 0; }
+    .fase-dados.quatro div:nth-child(n+3) { border-top: 1px solid var(--linha); }
+    .marca .projeto { display: none; }
+    .andamento .barra { display: none; }
+  }
+  @media (max-width: 620px) {
+    .topo { padding: 0 12px; gap: 10px; }
+    .copiar-topo { display: none; }
+    .cores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fase-dados, .fase-dados.quatro { grid-template-columns: 1fr; }
+    .fase-dados div { border-left: 0; border-top: 1px solid var(--linha); }
+    .fase-dados div:first-child { border-top: 0; }
+    .trilha a { grid-template-columns: 34px minmax(0, 1fr); }
+    .trilha .p { grid-column: 2; }
+    .passo { grid-template-columns: 38px minmax(0, 1fr); gap: 12px; }
+    .passo-num { width: 38px; height: 38px; font-size: 12px; }
+    .passo::before { left: 18px; top: 38px; }
+    .passo-corpo { padding: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <button class="botao botao-menu" id="abreMenu" aria-controls="menu" aria-expanded="false">Menu</button>
+  <a class="marca" href="#inicio" id="marcaTopo">
+    <span class="nome-toca">Toca Imóveis</span>
+    <span class="projeto">Projeto Estoque</span>
+  </a>
+  <span class="espaco"></span>
+  <div class="andamento" aria-live="polite">
+    <span id="contagem">0 de 0 passos</span>
+    <span class="barra" aria-hidden="true"><i id="barraGeral"></i></span>
+  </div>
+  <a class="botao copiar-topo" href="#painel">Abrir painel</a>
+</header>
+
+<nav class="lateral" id="menu" aria-label="Seções"></nav>
+<main id="conteudo" tabindex="-1"></main>
+<div class="aviso-toast" id="toast" role="status"></div>
+
+<script>
+/* =====================================================================
+   PROJETO ESTOQUE TOCA — plataforma de estudo do aprendiz
+   ---------------------------------------------------------------------
+   Para o gestor:
+   - Logo: coloque um arquivo "logo.png" na mesma pasta deste index.html.
+     Sem ele, a página mostra o nome "Toca Imóveis" em texto.
+   - Vídeos: cada aula tem o id do YouTube (o que vem depois de "v=" no
+     link). Para trocar uma aula, mude o id na lista FASES abaixo.
+   - Passos: edite os textos direto na lista FASES.
+   - Progresso: fica salvo no navegador do computador onde a página é aberta
+     (inclusive abrindo o arquivo direto do PC). No Painel dá para baixar
+     uma cópia de segurança e restaurar.
+   - Vídeos: o YouTube só toca dentro da página quando ela é aberta por um
+     endereço da web (ex.: Vercel). Abrindo o arquivo direto do PC, cada
+     aula abre no YouTube em outra aba.
+   ===================================================================== */
+
+const CEV = "Curso em Vídeo";
+
+const FASES = [
+  {
+    n: 0, titulo: "Preparar o computador", tempo: "cerca de 2 horas",
+    resumo: "Antes de escrever qualquer código, você deixa as ferramentas prontas e conhece o curso que vai te acompanhar.",
+    entrega: "Computador pronto e tutor ligado",
+    passos: [
+      { id: "0.1", t: "Conhecer o curso",
+        fazer: "Assista às duas aulas de abertura. Elas explicam como o curso funciona e o que se espera de você.",
+        videos: [
+          { id: "Ejkb_YpuHWs", t: "Começa aqui o novo Curso em Vídeo de HTML5 e CSS3" },
+          { id: "VfIXgGJWLvA", t: "Precisamos fazer um acordo", d: "19 min" }
+        ],
+        pronto: "você sabe explicar como o curso funciona." },
+      { id: "0.2", t: "Instalar as ferramentas",
+        fazer: "Instale o Visual Studio Code e o Google Chrome seguindo a aula, sem pular nenhuma etapa.",
+        videos: [{ id: "UForX7ehChM", t: "Instalando todas as ferramentas", d: "14 min" }],
+        pronto: "o VS Code abre em português." },
+      { id: "0.3", t: "Criar a pasta do projeto",
+        fazer: "Em Documentos, crie a pasta <code>estoque-toca</code>. Dentro dela, crie a pasta <code>imagens</code>.",
+        pronto: "as duas pastas existem." },
+      { id: "0.4", t: "Guardar o logo da Toca",
+        fazer: "Procure “Toca Imóveis logo” no Google Imagens (ou pegue no site tocaimoveis.com.br) e salve como <code>logo.png</code> dentro de <code>imagens</code>.",
+        pronto: "o arquivo logo.png está na pasta imagens." },
+      { id: "0.5", t: "Ligar o tutor",
+        fazer: "Crie sua conta no ChatGPT, ligue o Modo Estudo e cole o texto do tutor. Está tudo na seção <a href=\"#tutor\">Seu tutor</a>.",
+        pronto: "o ChatGPT respondeu com uma pergunta para você." }
+    ]
+  },
+  {
+    n: 1, titulo: "Entender e desenhar", tempo: "cerca de 3 horas",
+    resumo: "Você entende do que um site é feito e desenha no papel as telas do sistema. Desenhar antes evita refazer depois.",
+    entrega: "Telas desenhadas e aprovadas",
+    passos: [
+      { id: "1.1", t: "HTML, CSS e JavaScript",
+        fazer: "Assista à aula. Depois explique ao ChatGPT, com suas palavras, a diferença entre os três e peça para ele corrigir.",
+        videos: [{ id: "B4FU3NFRTDw", t: "A diferença entre HTML, CSS e JavaScript", d: "27 min" }],
+        pronto: "o ChatGPT confirmou que sua explicação está certa." },
+      { id: "1.2", t: "Front-end e back-end",
+        fazer: "Assista e responda no caderno: nosso projeto começa pelo front-end ou pelo back-end? Por quê?",
+        videos: [{ id: "iSqf2iPqJNM", t: "Front-end, Back-end e Full stack", d: "19 min" }],
+        pronto: "a resposta está escrita no caderno." },
+      { id: "1.3", t: "Desenhar as telas no papel",
+        fazer: "Abra <a href=\"#telas\">O que você vai construir</a> e desenhe cada tela em uma folha: login, lista de itens, cadastro e entrada e saída. Em todas, menos no login, desenhe o cabeçalho com o logo e o menu lateral. Pinte de vermelho só o que será vermelho.",
+        pronto: "há quatro folhas desenhadas." },
+      { id: "1.4", t: "Listar os campos de um item",
+        fazer: "Escreva tudo o que o sistema precisa saber sobre um item. Exemplo: nome, categoria, quantidade, quantidade mínima e local.",
+        pronto: "a lista de campos está escrita." },
+      { id: "1.5", t: "Mostrar ao gestor", gestor: true,
+        fazer: "Leve os desenhos e a lista de campos. Explique o que cada tela faz.",
+        pronto: "o gestor aprovou os desenhos." }
+    ]
+  },
+  {
+    n: 2, titulo: "Montar as telas em HTML", tempo: "cerca de 12 horas",
+    resumo: "Você escreve o esqueleto de todas as telas. Elas ficam sem cor e sem enfeite mesmo: nesta fase só importa o conteúdo estar no lugar.",
+    entrega: "Cinco páginas ligadas entre si, ainda sem estilo",
+    passos: [
+      { id: "2.1", t: "Seu primeiro código",
+        fazer: "Assista e faça o exercício da aula no seu computador, junto com o professor.",
+        videos: [{ id: "E6CdIawPTh0", t: "Seu primeiro código HTML", d: "18 min" }],
+        pronto: "a página do exercício abriu no Chrome." },
+      { id: "2.2", t: "Página inicial do sistema",
+        fazer: "Na pasta <code>estoque-toca</code>, crie <code>index.html</code> com o título “Estoque Toca”, um título principal e um parágrafo dizendo o que o sistema faz.",
+        videos: [
+          { id: "f6NTJdtEFOc", t: "Parágrafos e Quebras", d: "10 min" },
+          { id: "aiOEBhozEOg", t: "Hierarquia de Títulos", d: "16 min" }
+        ],
+        pronto: "a aba do Chrome mostra “Estoque Toca” e a página tem título e parágrafo." },
+      { id: "2.3", t: "Logo no topo",
+        fazer: "Coloque o logo da Toca no topo da página. A primeira aula explica por que podemos usar essa imagem e não qualquer uma.",
+        videos: [
+          { id: "bDULqeGEvAw", t: "Você tem o direito de usar qualquer imagem no seu site?", d: "11 min" },
+          { id: "CwOmEetWMnU", t: "A tag img em HTML5", d: "18 min" }
+        ],
+        pronto: "o logo aparece no topo." },
+      { id: "2.4", t: "Menu e as outras páginas",
+        fazer: "Crie <code>itens.html</code>, <code>cadastro.html</code>, <code>movimentacao.html</code> e <code>login.html</code>. Em todas, menos no login, coloque o logo e um menu em lista com os links das telas.",
+        videos: [
+          { id: "JlE0pzESf5g", t: "Listas OL e UL", d: "13 min" },
+          { id: "LeLnlT-ZKw8", t: "Links internos" }
+        ],
+        pronto: "clicar no menu leva de uma página para a outra." },
+      { id: "2.5", t: "Tabela da lista de itens",
+        fazer: "Em <code>itens.html</code>, monte uma tabela com as colunas nome, categoria, quantidade e local. Preencha três itens de exemplo.",
+        videos: [
+          { id: "lIiZu-94PBk", t: "Sua primeira tabela em HTML", d: "18 min" },
+          { id: "JJXLr02Gx_c", t: "Exemplo de tabela completa" }
+        ],
+        pronto: "a tabela aparece com três itens." },
+      { id: "2.6", t: "Formulário de cadastro",
+        fazer: "Em <code>cadastro.html</code>, crie o formulário com os campos que você listou no passo 1.4 e um botão Salvar. Ele ainda não salva nada, e está certo assim.",
+        videos: [
+          { id: "Wa1Ji2t2gmc", t: "Como criar formulários com HTML5" },
+          { id: "PFGmSEj2wIo", t: "Select, datalist e textarea em HTML" }
+        ],
+        pronto: "o formulário aparece com todos os campos e o botão." },
+      { id: "2.7", t: "Formulário de entrada e saída",
+        fazer: "Em <code>movimentacao.html</code>, crie o formulário com item, tipo (entrada ou saída), quantidade e data. Use o que aprendeu no passo anterior, sem vídeo novo.",
+        pronto: "o formulário aparece completo." },
+      { id: "2.8", t: "Tela de login",
+        fazer: "Assista à apresentação do projeto de login do curso e monte o formulário em <code>login.html</code>: logo, e-mail, senha e botão Entrar.",
+        videos: [
+          { id: "4NB0_DPpjak", t: "Tela de login responsiva só com HTML e CSS" },
+          { id: "htekZ2wA7Zo", t: "Criando o formulário de login" }
+        ],
+        pronto: "a página de login mostra os dois campos e o botão." },
+      { id: "2.9", t: "Mostrar ao gestor", gestor: true,
+        fazer: "Navegue pelas cinco páginas na frente dele e explique cada linha do código de uma delas.",
+        pronto: "você explicou tudo sem ajuda." }
+    ]
+  },
+  {
+    n: 3, titulo: "Dar a cara da Toca com CSS", tempo: "cerca de 12 horas",
+    resumo: "Agora as telas ganham cor, espaço e forma. O alvo são as imagens de O que você vai construir.",
+    entrega: "Telas com a identidade da Toca",
+    passos: [
+      { id: "3.1", t: "Três jeitos de usar CSS",
+        fazer: "Assista às três aulas, na ordem. No fim, crie <code>style.css</code> e ligue esse arquivo a todas as páginas.",
+        videos: [
+          { id: "byqhpuVpvEI", t: "Estilos CSS inline" },
+          { id: "fzyab4P2pn8", t: "Estilos CSS internos" },
+          { id: "-i1JVMspDJQ", t: "Estilos CSS externos" }
+        ],
+        pronto: "mudar uma cor em style.css muda todas as páginas." },
+      { id: "3.2", t: "Cores da Toca",
+        fazer: "Aplique as cores da seção <a href=\"#marca\">Cara da Toca</a>: fundo branco, textos em cinza escuro e vermelho só no botão principal.",
+        videos: [
+          { id: "A8UNBs7nxw4", t: "Psicologia das Cores", d: "24 min" },
+          { id: "uKjKnztS3cY", t: "Representando Cores com CSS3", d: "21 min" }
+        ],
+        pronto: "as páginas usam só as quatro cores da Toca." },
+      { id: "3.3", t: "Dar nome às partes",
+        fazer: "Use <code>id</code> e <code>class</code> para marcar cabeçalho, menu, botões e campos, e estilize cada um.",
+        videos: [{ id: "zXfTjPrMC_0", t: "As diferenças entre id e class" }],
+        pronto: "todos os botões principais têm a mesma aparência usando uma class." },
+      { id: "3.4", t: "Espaço e cantos",
+        fazer: "Dê respiro às caixas, botões e campos, e arredonde os cantos de leve.",
+        videos: [{ id: "rXF1okX0v9E", t: "Modelo de Caixas na prática (parte 1)" }],
+        pronto: "nada fica colado na borda da tela nem em outro elemento." },
+      { id: "3.5", t: "Cabeçalho em cima, menu ao lado",
+        fazer: "Monte o esqueleto das páginas: cabeçalho com o logo no topo e menu na lateral esquerda, com o conteúdo à direita.",
+        videos: [{ id: "YeGn9nGies0", t: "Primeiros passos com Flexbox CSS" }],
+        pronto: "todas as páginas, menos o login, têm cabeçalho e menu lateral iguais." },
+      { id: "3.6", t: "Login com estilo",
+        fazer: "Centralize o cartão de login na tela e estilize campos e botão.",
+        videos: [
+          { id: "JDS9ZLpoS6E", t: "Aplicando estilo ao formulário de login" },
+          { id: "AKj3L3ouVAk", t: "Versão mobile first da tela de login" }
+        ],
+        pronto: "o login parece com a imagem esperada." },
+      { id: "3.7", t: "Tabela e formulários com estilo",
+        fazer: "Estilize a tabela de itens e os dois formulários. Compare lado a lado com as imagens esperadas e ajuste.",
+        pronto: "as três telas parecem com as imagens esperadas." },
+      { id: "3.8", t: "Mostrar ao gestor", gestor: true,
+        fazer: "Abra suas telas ao lado das imagens esperadas e aponte o que ficou igual e o que ficou diferente.",
+        pronto: "o gestor aprovou o visual." }
+    ]
+  },
+  {
+    n: 4, titulo: "Fazer funcionar com JavaScript", tempo: "cerca de 15 horas",
+    resumo: "As telas deixam de ser desenho. Cadastrar, listar e movimentar passam a funcionar, com os dados guardados no próprio navegador.",
+    entrega: "Sistema funcionando no seu computador",
+    passos: [
+      { id: "4.1", t: "O que o JavaScript faz",
+        fazer: "Assista à primeira aula do curso de JavaScript.",
+        videos: [{ id: "Ptbk2af68e8", t: "O que o JavaScript é capaz de fazer? (aula 1)", d: "29 min" }],
+        pronto: "você sabe dizer três coisas que o JavaScript faz em uma página." },
+      { id: "4.2", t: "Primeiro script",
+        fazer: "Faça os exercícios das duas aulas no seu computador.",
+        videos: [
+          { id: "FdePtO5JSd0", t: "Dando os primeiros passos (aula 3)", d: "33 min" },
+          { id: "OmmJBfcMJA8", t: "Criando o seu primeiro script (aula 4)", d: "24 min" }
+        ],
+        pronto: "seu primeiro script roda no Chrome." },
+      { id: "4.3", t: "Guardar valores",
+        fazer: "Aprenda a guardar e tratar dados. É o que o sistema fará com nome, quantidade e local de cada item.",
+        videos: [
+          { id: "Vbabsye7mWo", t: "Variáveis e Tipos Primitivos (aula 5)" },
+          { id: "OJgu_KCCUSY", t: "Tratamento de dados (aula 6)", d: "39 min" }
+        ],
+        pronto: "você fez os exercícios das duas aulas." },
+      { id: "4.4", t: "Conversar com a página",
+        fazer: "Faça o botão Salvar do cadastro ler o que foi digitado e mostrar o nome do item na tela.",
+        videos: [
+          { id: "WWZX8RWLxIk", t: "Introdução ao DOM (aula 9)" },
+          { id: "wWnBB-mZIvY", t: "Eventos DOM (aula 10)" }
+        ],
+        pronto: "clicar em Salvar mostra na tela o nome que você digitou." },
+      { id: "4.5", t: "Conferir antes de salvar",
+        fazer: "Não deixe salvar com campo vazio ou quantidade negativa. Na lista, destaque o item que estiver abaixo da quantidade mínima.",
+        videos: [{ id: "cOdG4eACN2A", t: "Condições, parte 1 (aula 11)" }],
+        pronto: "tentar salvar vazio mostra um aviso." },
+      { id: "4.6", t: "Montar a lista sozinho",
+        fazer: "Guarde os itens em uma lista no código e faça o JavaScript desenhar a tabela a partir dela. Peça ao tutor para explicar o que é um array.",
+        videos: [
+          { id: "5rZqYPKIwkY", t: "Repetições, parte 1 (aula 13)", d: "20 min" },
+          { busca: "Variáveis Compostas Curso JavaScript #15 Curso em Vídeo", t: "Variáveis compostas (aula 15)" }
+        ],
+        pronto: "um item cadastrado aparece na tabela sem você mexer no HTML." },
+      { id: "4.7", t: "Não perder os dados",
+        fazer: "Salve a lista no navegador para ela continuar lá depois de fechar o Chrome.",
+        videos: [{ id: "xNLxJ8IraFA", t: "Introdução ao LocalStorage em JavaScript" }],
+        pronto: "você fecha o Chrome, abre de novo e os itens continuam na lista." },
+      { id: "4.8", t: "Entrada e saída de verdade",
+        fazer: "Faça a tela de movimentação somar ou tirar da quantidade do item e guardar o histórico. Não deixe sair mais do que existe.",
+        pronto: "registrar uma saída diminui a quantidade na lista." },
+      { id: "4.9", t: "Login provisório",
+        fazer: "Faça o botão Entrar levar para a lista de itens. Por enquanto é só uma porta de enfeite: o login de verdade vem na fase 5.",
+        pronto: "entrar pelo login abre a lista de itens." },
+      { id: "4.10", t: "Mostrar ao gestor", gestor: true,
+        fazer: "Cadastre um item, registre uma entrada e uma saída e mostre o resultado. Explique onde os dados estão guardados.",
+        pronto: "o gestor usou o sistema sozinho, sem você explicar onde clicar." }
+    ]
+  },
+  {
+    n: 5, titulo: "Guardar os dados no Supabase", tempo: "cerca de 10 horas",
+    resumo: "Os dados saem do seu navegador e vão para um banco de dados na nuvem. Assim, qualquer pessoa autorizada vê o mesmo estoque.",
+    entrega: "Sistema com banco de dados e login de verdade",
+    passos: [
+      { id: "5.1", t: "O que é o Supabase",
+        fazer: "Assista ao começo do curso para entender o que é um banco de dados e o que o Supabase faz.",
+        videos: [{ id: "OztHXOnQLXc", t: "Curso Supabase gratuito para iniciantes", canal: "YouTube" }],
+        pronto: "você sabe explicar o que é uma tabela, uma linha e uma coluna." },
+      { id: "5.2", t: "Criar o projeto com o gestor", gestor: true,
+        fazer: "O projeto no Supabase é criado junto com o gestor. Não crie sozinho e não coloque dados reais da empresa.",
+        pronto: "o projeto existe e você tem acesso a ele." },
+      { id: "5.3", t: "Criar as tabelas",
+        fazer: "Crie a tabela de itens e a de movimentações, com os mesmos campos que seu sistema já usa. Ligue cada movimentação ao seu item.",
+        videos: [{ id: "tl0TkyfSHNo", t: "Overview do Supabase: como criar e relacionar tabelas", canal: "YouTube" }],
+        pronto: "as duas tabelas existem e têm um item de teste." },
+      { id: "5.4", t: "Ler os itens do banco",
+        fazer: "Ligue o site ao Supabase e faça a lista de itens vir do banco, e não mais do navegador. Use a documentação oficial (supabase.com/docs) com a ajuda do tutor.",
+        pronto: "um item criado direto no Supabase aparece na sua lista." },
+      { id: "5.5", t: "Gravar no banco",
+        fazer: "Faça o cadastro e a entrada e saída gravarem no Supabase.",
+        pronto: "o que você cadastra no site aparece na tabela do Supabase." },
+      { id: "5.6", t: "Login de verdade",
+        fazer: "Troque o login provisório pelo login do Supabase, com e-mail e senha. Quem não entrou não vê as outras páginas.",
+        pronto: "abrir a lista sem ter feito login leva para a tela de login." },
+      { id: "5.7", t: "Revisão de segurança com o gestor", gestor: true,
+        fazer: "Antes de publicar, o gestor confere as regras de acesso das tabelas. Sem isso, o sistema não vai ao ar.",
+        pronto: "o gestor revisou e liberou." },
+      { id: "5.8", t: "Apresentação final", gestor: true,
+        fazer: "Apresente o sistema do começo ao fim e conte o que foi mais difícil e o que você faria diferente.",
+        pronto: "projeto entregue." }
+    ]
+  }
+];
+
+const TELAS = [
+  { id: "login", nome: "Login", arquivo: "login.html",
+    precisa: ["Logo da Toca no alto do cartão", "Campo de e-mail e campo de senha", "Botão Entrar em vermelho", "Cartão centralizado na tela, sem menu"] },
+  { id: "itens", nome: "Lista de itens", arquivo: "itens.html",
+    precisa: ["Cabeçalho com o logo da Toca", "Menu lateral com as três telas", "Tabela com nome, categoria, quantidade e local", "Botão Novo item", "Aviso no item com estoque baixo"] },
+  { id: "cadastro", nome: "Cadastro de item", arquivo: "cadastro.html",
+    precisa: ["Mesmo cabeçalho e mesmo menu lateral", "Campos: nome, categoria, quantidade, quantidade mínima e local", "Botão Salvar em vermelho e botão Cancelar"] },
+  { id: "mov", nome: "Entrada e saída", arquivo: "movimentacao.html",
+    precisa: ["Mesmo cabeçalho e mesmo menu lateral", "Escolha do item e do tipo: entrada ou saída", "Quantidade e data", "Lista das últimas movimentações"] }
+];
+
+const TUTOR = `Você é meu tutor de programação. Sou iniciante total e estou fazendo o curso de HTML5 e CSS3 do Curso em Vídeo (Gustavo Guanabara).
+
+Meu projeto é um sistema de estoque simples para a Toca Imóveis, com tela de login, lista de itens, cadastro de item e entrada e saída. Todas as telas têm cabeçalho com logo e menu lateral.
+
+Regras:
+1) Não me entregue código pronto do projeto.
+2) Explique com palavras simples e exemplos curtos.
+3) Faça perguntas para eu chegar à resposta.
+4) Quando eu colar um erro, me ajude a achar a causa antes de mostrar a correção.
+5) No fim, peça para eu explicar com minhas palavras o que aprendi.
+
+Hoje estou no passo: ____`;
+
+/* ------------------------- Estado e armazenamento ------------------------- */
+const CHAVE = "estoqueToca.progresso.v1";
+/* feitos: { "0.1": data em milissegundos }  |  diario: { "2026-11-16": "texto" } */
+function normaliza(o) {
+  const obj = x => (x && typeof x === "object" && !Array.isArray(x)) ? x : {};
+  return { feitos: obj(o.feitos), nome: typeof o.nome === "string" ? o.nome.slice(0, 40) : "", diario: obj(o.diario), salvoEm: +o.salvoEm || 0 };
+}
+let estado = normaliza({});
+let podeSalvar = true;
+try {
+  const salvo = JSON.parse(localStorage.getItem(CHAVE) || "null");
+  if (salvo && typeof salvo === "object") estado = normaliza(salvo);
+  localStorage.setItem(CHAVE + ".teste", "1"); localStorage.removeItem(CHAVE + ".teste");
+} catch (e) { podeSalvar = false; /* sem armazenamento: o progresso vale só enquanto a página estiver aberta */ }
+function salvar() {
+  estado.salvoEm = Date.now();
+  try { localStorage.setItem(CHAVE, JSON.stringify(estado)); podeSalvar = true; } catch (e) { podeSalvar = false; }
+}
+/* pede ao navegador para não apagar os dados sozinho quando faltar espaço */
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
+
+const LOCAL = (() => { try { return location.protocol === "file:"; } catch (e) { return false; } })();
+const doisDig = n => String(n).padStart(2, "0");
+const chaveDia = (d = new Date()) => `${d.getFullYear()}-${doisDig(d.getMonth() + 1)}-${doisDig(d.getDate())}`;
+const diaBonito = k => { const [a, m, d] = k.split("-"); return `${d}/${m}/${a}`; };
+function quando(ms) {
+  if (!ms || ms === true) return "";
+  const d = new Date(ms);
+  const dia = chaveDia(d) === chaveDia() ? "hoje" : `${doisDig(d.getDate())}/${doisDig(d.getMonth() + 1)}`;
+  return `${dia} às ${doisDig(d.getHours())}:${doisDig(d.getMinutes())}`;
+}
+
+let temLogo = false;
+let telaAtiva = "itens";
+
+const TODOS = FASES.flatMap(f => f.passos.map(p => ({ ...p, fase: f.n })));
+const feitosDa = f => f.passos.filter(p => estado.feitos[p.id]).length;
+const totalFeitos = () => TODOS.filter(p => estado.feitos[p.id]).length;
+const proximoPasso = () => TODOS.find(p => !estado.feitos[p.id]);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* ------------------------------- Mockups ---------------------------------- */
+function logoMock() {
+  return temLogo ? '<img src="logo.png" alt="Toca Imóveis">' : "Toca Imóveis";
+}
+function casca(ativo, miolo) {
+  const itens = [["itens", "Itens"], ["cadastro", "Novo item"], ["mov", "Entrada e saída"]];
+  return `
+    <div class="m-topo">
+      <span class="m-logo">${logoMock()}</span>
+      <span class="m-sis">Estoque</span>
+      <span class="m-user"><b>Aprendiz</b><span>Sair</span></span>
+    </div>
+    <div class="m-corpo">
+      <div class="m-menu">${itens.map(([k, r]) => `<span class="${k === ativo ? "ativo" : ""}">${r}</span>`).join("")}</div>
+      <div class="m-pag">${miolo}</div>
+    </div>`;
+}
+function mock(id) {
+  const tela = TELAS.find(t => t.id === id);
+  let dentro = "";
+  if (id === "login") {
+    dentro = `
+      <div class="m-login"><div class="m-cartao">
+        <div class="m-logo">${logoMock()}</div>
+        <div class="sub">Estoque</div>
+        <div class="m-campo"><label>E-mail</label><div class="cx">seu@email.com</div></div>
+        <div class="m-campo"><label>Senha</label><div class="cx">••••••••</div></div>
+        <span class="m-btn">Entrar</span>
+      </div></div>`;
+  } else if (id === "itens") {
+    dentro = casca("itens", `
+      <div class="m-cab"><b>Itens do estoque</b><span class="m-btn">Novo item</span></div>
+      <div class="m-cartao"><table class="m-tab">
+        <tr><th>Nome</th><th>Categoria</th><th class="num">Quantidade</th><th>Local</th></tr>
+        <tr><td>Papel A4 (resma)</td><td>Escritório</td><td class="num">24</td><td>Almoxarifado</td></tr>
+        <tr><td>Placa “Aluga-se”<span class="m-tag">Estoque baixo</span></td><td>Placas</td><td class="num">3</td><td>Depósito</td></tr>
+        <tr><td>Detergente</td><td>Limpeza</td><td class="num">12</td><td>Copa</td></tr>
+        <tr><td>Caneta azul</td><td>Escritório</td><td class="num">40</td><td>Almoxarifado</td></tr>
+      </table></div>`);
+  } else if (id === "cadastro") {
+    dentro = casca("cadastro", `
+      <div class="m-cab"><b>Novo item</b></div>
+      <div class="m-cartao"><div class="m-form">
+        <div class="m-campo inteiro"><label>Nome do item</label><div class="cx">Ex.: Papel A4 (resma)</div></div>
+        <div class="m-campo"><label>Categoria</label><div class="cx cheia">Escritório <span>▾</span></div></div>
+        <div class="m-campo"><label>Local</label><div class="cx">Ex.: Almoxarifado</div></div>
+        <div class="m-campo"><label>Quantidade</label><div class="cx">0</div></div>
+        <div class="m-campo"><label>Quantidade mínima</label><div class="cx">0</div></div>
+        <div class="m-acoes"><span class="m-btn">Salvar</span><span class="m-btn claro">Cancelar</span></div>
+      </div></div>`);
+  } else {
+    dentro = casca("mov", `
+      <div class="m-cab"><b>Entrada e saída</b></div>
+      <div class="m-cartao"><div class="m-form">
+        <div class="m-campo"><label>Item</label><div class="cx cheia">Placa “Aluga-se” <span>▾</span></div></div>
+        <div class="m-campo"><label>Tipo</label><div class="m-radios"><span><i class="on"></i>Entrada</span><span><i></i>Saída</span></div></div>
+        <div class="m-campo"><label>Quantidade</label><div class="cx cheia">10</div></div>
+        <div class="m-campo"><label>Data</label><div class="cx cheia">16/11/2026</div></div>
+        <div class="m-acoes"><span class="m-btn">Registrar</span></div>
+      </div></div>
+      <div class="m-sub">Últimas movimentações</div>
+      <div class="m-cartao"><table class="m-tab">
+        <tr><td>14/11</td><td>Papel A4 (resma)</td><td>Saída</td><td class="num">2</td></tr>
+        <tr><td>12/11</td><td>Detergente</td><td>Entrada</td><td class="num">6</td></tr>
+      </table></div>`);
+  }
+  return `
+    <div class="mock" role="img" aria-label="Exemplo da tela ${esc(tela.nome)}">
+      <div class="mock-barra"><i></i><i></i><i></i><span>estoque-toca / ${tela.arquivo}</span></div>
+      <div class="mock-tela">${dentro}</div>
+    </div>`;
+}
+
+/* -------------------------------- Vídeos ---------------------------------- */
+function videoHTML(v) {
+  if (v.busca) {
+    const url = "https://www.youtube.com/results?search_query=" + encodeURIComponent(v.busca);
+    return `<div class="video sem"><b>${esc(v.t)}</b>Esta aula ainda não está embutida aqui. <a href="${url}" target="_blank" rel="noopener">Procurar no YouTube</a></div>`;
+  }
+  const canal = v.canal || CEV;
+  const meta = [canal, v.d].filter(Boolean).join(", ");
+  if (LOCAL) return `
+    <div class="video" data-video="${esc(v.id)}">
+      <a class="video-capa" href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener" style="background-image:url('https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg')" aria-label="Assistir no YouTube: ${esc(v.t)}">
+        <span class="play" aria-hidden="true"></span>
+        <span class="legenda"><b>${esc(v.t)}</b><span>${esc(meta)}</span></span>
+      </a>
+      <div class="video-pe"><span>Abre no YouTube, em outra aba.</span></div>
+    </div>`;
+  return `
+    <div class="video" data-video="${esc(v.id)}">
+      <button class="video-capa" style="background-image:url('https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg')" aria-label="Assistir: ${esc(v.t)}">
+        <span class="play" aria-hidden="true"></span>
+        <span class="legenda"><b>${esc(v.t)}</b><span>${esc(meta)}</span></span>
+      </button>
+      <div class="video-pe"><a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">Não abriu? Ver no YouTube</a></div>
+    </div>`;
+}
+
+/* -------------------------------- Seções ---------------------------------- */
+function secInicio() {
+  const prox = proximoPasso();
+  const faseProx = prox ? FASES[prox.fase] : null;
+  return `
+  <div class="folha larga">
+    <div class="capa">
+      <div>
+        <h1>Do zero até um sistema de estoque funcionando.</h1>
+        <p class="abre">Você vai construir o Estoque da Toca Imóveis, uma tela de cada vez. Aqui estão as aulas, os passos e o jeito de saber que cada um terminou.</p>
+        <div class="proximo">
+          ${prox
+            ? `<b>Seu próximo passo</b>${esc(prox.id)} ${esc(prox.t)}, na fase ${faseProx.n}`
+            : `<b>Trilha concluída</b>Você terminou todos os passos. Parabéns.`}
+        </div>
+        <div class="acoes">
+          ${prox ? `<a class="botao principal" href="#fase-${prox.fase}" data-ir="${esc(prox.id)}">${totalFeitos() ? "Continuar de onde parei" : "Começar"}</a>` : ""}
+          <a class="botao" href="#telas">Ver o que vou construir</a>
+        </div>
+        <label class="nome-campo">Seu nome <input id="nome" type="text" value="${esc(estado.nome)}" autocomplete="given-name" placeholder="Como te chamam"></label>
+      </div>
+      <div>${mock("itens")}<p class="miudo" style="margin-top:8px">Uma das telas que você vai fazer. Hoje ela é só uma imagem.</p></div>
+    </div>
+
+    <h2>As seis fases</h2>
+    <p class="texto">Uma fase só começa depois que você mostrou a anterior ao gestor.</p>
+    <div class="trilha">
+      ${FASES.map(f => {
+        const fz = feitosDa(f), tot = f.passos.length;
+        return `<a href="#fase-${f.n}" class="${fz === tot ? "completa" : ""}">
+          <span class="n">${fz === tot ? "✓" : f.n}</span>
+          <span><span class="t">${esc(f.titulo)}</span><br><span class="s">${esc(f.entrega)}</span></span>
+          <span class="p"><span class="barra"><i style="width:${Math.round(fz / tot * 100)}%"></i></span>${fz}/${tot}</span>
+        </a>`;
+      }).join("")}
+    </div>
+
+    <h2>Como estudar</h2>
+    <ul class="regras">
+      <li>Assista às aulas com o VS Code aberto e faça junto com o professor. Só assistir não ensina.</li>
+      <li>Travou? Tente sozinho por 15 minutos antes de perguntar ao tutor.</li>
+      <li>Só entra no projeto a linha de código que você consegue explicar em voz alta.</li>
+      <li>No fim de cada dia, escreva no Diário do <a href="#painel">Painel</a>: o que aprendi, onde travei e o que faço amanhã.</li>
+      <li>Marque cada passo concluído. Fica salvo neste computador e você continua de onde parou no dia seguinte.</li>
+    </ul>
+  </div>`;
+}
+
+function secTelas() {
+  const tela = TELAS.find(t => t.id === telaAtiva);
+  return `
+  <div class="folha larga">
+    <h1>O que você vai construir</h1>
+    <p class="abre">Quatro telas. Todas, menos o login, têm o mesmo esqueleto: cabeçalho com o logo da Toca em cima e menu na lateral. Use estas imagens como alvo.</p>
+    <div class="abas" role="tablist" aria-label="Telas do sistema">
+      ${TELAS.map(t => `<button role="tab" aria-selected="${t.id === telaAtiva}" data-tela="${t.id}">${esc(t.nome)}</button>`).join("")}
+    </div>
+    <div class="vitrine">
+      <div>${mock(tela.id)}</div>
+      <div class="precisa">
+        <h3>O que esta tela precisa ter</h3>
+        <ul style="margin-top:8px">${tela.precisa.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      </div>
+    </div>
+    <p class="texto miudo">Os itens e números são só exemplos. Sua tela não precisa ficar idêntica, mas precisa ter tudo o que está na lista.</p>
+  </div>`;
+}
+
+function secTutor() {
+  return `
+  <div class="folha">
+    <h1>Seu tutor: o ChatGPT</h1>
+    <p class="abre">Ele é seu professor particular, não quem faz o trabalho.</p>
+    <p class="destaque">Se o ChatGPT escrever o projeto por você, sobra um sistema pronto e você sem saber nada. O que vale aqui é o que você aprende.</p>
+
+    <h2>Como ligar</h2>
+    <p class="texto">No ChatGPT, abra um chat novo, clique em Ferramentas e escolha “Estudar e aprender” (Modo Estudo). Depois cole o texto abaixo no começo de cada conversa e troque o final pelo passo em que você está.</p>
+    <div class="copiavel">
+      <pre id="textoTutor">${esc(TUTOR)}</pre>
+      <div class="pe"><button class="botao principal" data-copiar="tutor">Copiar texto do tutor</button></div>
+    </div>
+
+    <h2>O que pode e o que não pode</h2>
+    <div class="duas">
+      <div class="lista-pode sim"><h3>Pode</h3><ul>
+        <li>Pedir para explicar um vídeo com outras palavras</li>
+        <li>Perguntar o que faz uma linha de código</li>
+        <li>Colar um erro e pedir ajuda para achar a causa</li>
+        <li>Pedir um exercício para treinar</li>
+        <li>Pedir a revisão de um código que você escreveu</li>
+      </ul></div>
+      <div class="lista-pode nao"><h3>Não pode</h3><ul>
+        <li>Pedir a tela ou o sistema pronto</li>
+        <li>Copiar e colar código que você não sabe explicar</li>
+        <li>Pular o vídeo e ir direto ao ChatGPT</li>
+        <li>Esconder do gestor onde você travou</li>
+      </ul></div>
+    </div>
+  </div>`;
+}
+
+function secMarca() {
+  const cores = [
+    ["Branco", "#FFFFFF", "Fundo das telas"],
+    ["Cinza claro", "#F4F4F4", "Faixas, cabeçalho de tabela e caixas"],
+    ["Cinza escuro", "#333333", "Todos os textos"],
+    ["Vermelho Toca", "#AA1818", "Botão principal e pequenos destaques"]
+  ];
+  return `
+  <div class="folha">
+    <h1>A cara da Toca</h1>
+    <p class="abre">O sistema usa as cores da Toca. O vermelho chama atenção, por isso aparece pouco: no máximo um décimo da tela.</p>
+    <div class="proporcao" aria-label="Proporção das cores: muito branco, bastante cinza, pouco vermelho">
+      <span style="flex:60;background:#FFFFFF">Branco</span>
+      <span style="flex:30;background:#F4F4F4;border-left:1px solid var(--linha)">Cinza</span>
+      <span style="flex:10;background:#AA1818;color:#fff">Vermelho</span>
+    </div>
+    <h2>Cores</h2>
+    <p class="texto miudo">Clique em uma cor para copiar o código.</p>
+    <div class="cores">
+      ${cores.map(([n, h, u]) => `<button class="cor" data-cor="${h}"><i style="background:${h}"></i><b>${n}</b><code>${h}</code><small>${u}</small></button>`).join("")}
+    </div>
+    <h2>Letra e formas</h2>
+    <ul class="regras">
+      <li>Fonte Arial em tudo.</li>
+      <li>Botões, campos e caixas com cantos levemente arredondados.</li>
+      <li>Textos curtos nos botões: Salvar, Entrar, Novo item.</li>
+    </ul>
+    <h2>Logo</h2>
+    <p class="texto">Procure “Toca Imóveis logo” no Google Imagens, ou pegue no site tocaimoveis.com.br, e salve como <b>logo.png</b> na pasta <b>imagens</b> do seu projeto. Ele aparece no cabeçalho de todas as telas e no cartão de login.</p>
+  </div>`;
+}
+
+function secPainel() {
+  const fz = totalFeitos(), tot = TODOS.length, prox = proximoPasso();
+  const datas = TODOS.map(p => estado.feitos[p.id]).filter(x => typeof x === "number");
+  const dias = new Set(datas.map(x => chaveDia(new Date(x))));
+  Object.keys(estado.diario).forEach(k => { if (estado.diario[k]) dias.add(k); });
+  const ultimos = TODOS.filter(p => typeof estado.feitos[p.id] === "number").sort((a, b) => estado.feitos[b.id] - estado.feitos[a.id]).slice(0, 8);
+  const hoje = chaveDia();
+  const antigos = Object.keys(estado.diario).filter(k => k !== hoje && estado.diario[k]).sort().reverse().slice(0, 10);
+  return `
+  <div class="folha">
+    <h1>Painel</h1>
+    <p class="abre">${estado.nome ? esc(estado.nome) + ", aqui" : "Aqui"} está tudo o que você já fez. ${podeSalvar
+      ? "Fica salvo neste computador, neste navegador, e continua aqui amanhã."
+      : "Atenção: este navegador não está deixando salvar. Baixe uma cópia antes de fechar a página."}</p>
+    <div class="fase-dados quatro">
+      <div><span>Passos concluídos</span><b>${fz} de ${tot} (${Math.round(fz / tot * 100)}%)</b></div>
+      <div><span>Próximo passo</span><b>${prox ? esc(prox.id + " " + prox.t) : "Trilha concluída"}</b></div>
+      <div><span>Dias de estudo</span><b>${dias.size}</b></div>
+      <div><span>Último salvamento</span><b>${estado.salvoEm ? quando(estado.salvoEm) : "ainda não houve"}</b></div>
+    </div>
+    ${prox ? `<div class="acoes-painel"><a class="botao principal" href="#fase-${prox.fase}" data-ir="${esc(prox.id)}">Continuar de onde parei</a></div>` : ""}
+
+    <h2>Fases</h2>
+    <div class="trilha">
+      ${FASES.map(f => {
+        const n = feitosDa(f), t = f.passos.length;
+        return `<a href="#fase-${f.n}" class="${n === t ? "completa" : ""}">
+          <span class="n">${n === t ? "✓" : f.n}</span>
+          <span><span class="t">${esc(f.titulo)}</span><br><span class="s">${esc(f.tempo)}</span></span>
+          <span class="p"><span class="barra"><i style="width:${Math.round(n / t * 100)}%"></i></span>${n}/${t}</span>
+        </a>`;
+      }).join("")}
+    </div>
+
+    <h2>Últimos passos concluídos</h2>
+    ${ultimos.length
+      ? `<ul class="hist">${ultimos.map(p => `<li><span>${esc(p.id + " " + p.t)}</span><span class="quando">${quando(estado.feitos[p.id])}</span></li>`).join("")}</ul>`
+      : `<p class="vazio">Nenhum passo marcado ainda. Comece pela fase 0.</p>`}
+
+    <h2>Diário</h2>
+    <p class="texto">No fim do dia, escreva aqui: o que aprendi, onde travei e o que faço amanhã. O gestor vai ler.</p>
+    <div class="diario">
+      <textarea id="diarioHoje" aria-label="Diário de hoje, ${diaBonito(hoje)}" placeholder="Hoje, ${diaBonito(hoje)}">${esc(estado.diario[hoje] || "")}</textarea>
+      ${antigos.map(k => `<div class="dia"><b>${diaBonito(k)}</b>${esc(estado.diario[k])}</div>`).join("")}
+    </div>
+
+    <h2>Cópia de segurança</h2>
+    <p class="texto">O progresso some se alguém limpar os dados do navegador, se você usar janela anônima ou trocar de navegador ou de computador. Baixe uma cópia de vez em quando: com ela dá para restaurar tudo.</p>
+    <div class="acoes-painel">
+      <button class="botao" data-acao="baixar">Baixar cópia do progresso</button>
+      <label class="botao" for="arquivoCopia">Restaurar de uma cópia</label>
+      <input type="file" id="arquivoCopia" accept=".json,application/json">
+      <button class="botao" data-acao="resumo">Copiar resumo para o gestor</button>
+      <button class="botao perigo" data-acao="apagar">Apagar todo o progresso</button>
+    </div>
+  </div>`;
+}
+
+function secFase(n) {
+  const f = FASES[n];
+  const anterior = FASES[n - 1], seguinte = FASES[n + 1];
+  const pendente = anterior && feitosDa(anterior) < anterior.passos.length;
+  return `
+  <div class="folha">
+    <div class="fase-topo">
+      <span class="selo">Fase ${f.n}</span>
+      <h1>${esc(f.titulo)}</h1>
+      <p class="abre">${esc(f.resumo)}</p>
+    </div>
+    <div class="fase-dados">
+      <div><span>Tempo</span><b>${esc(f.tempo)}</b></div>
+      <div><span>No fim desta fase</span><b>${esc(f.entrega)}</b></div>
+      <div><span>Passos concluídos</span><b id="contaFase">${feitosDa(f)} de ${f.passos.length}</b></div>
+    </div>
+    ${pendente ? `<p class="aviso">A fase ${anterior.n} ainda tem passos abertos. Termine e mostre ao gestor antes de seguir aqui.</p>` : ""}
+    <ol class="passos">
+      ${f.passos.map(p => `
+        <li class="passo ${estado.feitos[p.id] ? "feito" : ""}" id="passo-${p.id.replace(".", "-")}">
+          <div class="passo-num" aria-hidden="true">${estado.feitos[p.id] ? "✓" : esc(p.id)}</div>
+          <div class="passo-corpo">
+            ${p.gestor ? '<span class="controle">Com o gestor</span>' : ""}
+            <h3>${esc(p.t)}</h3>
+            <p>${p.fazer}</p>
+            ${p.videos ? `<div class="videos">${p.videos.map(videoHTML).join("")}</div>` : ""}
+            <p class="pronto"><b>Pronto quando</b> ${esc(p.pronto)}</p>
+            <label class="marcar"><input type="checkbox" data-passo="${esc(p.id)}" ${estado.feitos[p.id] ? "checked" : ""}> Concluí este passo</label>
+          </div>
+        </li>`).join("")}
+    </ol>
+    <div class="navega">
+      ${anterior ? `<a class="botao" href="#fase-${anterior.n}">Voltar para a fase ${anterior.n}</a>` : `<a class="botao" href="#inicio">Voltar ao começo</a>`}
+      ${seguinte ? `<a class="botao principal" href="#fase-${seguinte.n}">Ir para a fase ${seguinte.n}</a>` : ""}
+    </div>
+  </div>`;
+}
+
+/* ------------------------------ Navegação --------------------------------- */
+const ROTAS = { inicio: secInicio, telas: secTelas, tutor: secTutor, marca: secMarca, painel: secPainel };
+/* A seção aberta fica guardada aqui, e não no endereço da página. Assim a
+   navegação funciona em qualquer lugar: Vercel, arquivo aberto do computador
+   ou pré-visualização dentro de outra página. */
+function rotaValida(h) {
+  if (ROTAS[h]) return h;
+  const m = String(h).match(/^fase-(\d)$/);
+  return m && FASES[+m[1]] ? h : null;
+}
+function rotaDoEndereco() {
+  try { return rotaValida((location.hash || "").slice(1)); } catch (e) { return null; }
+}
+let rota = rotaDoEndereco() || "inicio";
+function rotaAtual() { return rota; }
+function vaiPara(nova, irPara) {
+  rota = rotaValida(nova) || "inicio";
+  try { history.pushState(null, "", "#" + rota); } catch (e) { /* sem acesso ao endereço: segue só em memória */ }
+  desenha(irPara);
+}
+
+function desenhaMenu() {
+  const r = rotaAtual();
+  const link = (id, rotulo) => `<a href="#${id}" ${r === id ? 'aria-current="page"' : ""}><span class="rotulo">${rotulo}</span></a>`;
+  document.getElementById("menu").innerHTML = `
+    <div class="grupo">Comece por aqui</div>
+    ${link("inicio", "Início")}
+    ${link("telas", "O que você vai construir")}
+    ${link("tutor", "Seu tutor")}
+    ${link("marca", "Cara da Toca")}
+    <div class="grupo">Fases</div>
+    ${FASES.map(f => {
+      const fz = feitosDa(f), tot = f.passos.length, id = "fase-" + f.n;
+      return `<a href="#${id}" class="${fz === tot ? "completa" : ""}" ${r === id ? 'aria-current="page"' : ""}>
+        <span class="fase-n">${fz === tot ? "✓" : f.n}</span>
+        <span class="rotulo">${esc(f.titulo)}</span>
+        <span class="conta">${fz}/${tot}</span></a>`;
+    }).join("")}
+    <div class="grupo">Acompanhar</div>
+    ${link("painel", "Painel")}
+    <p class="salvo-info">${podeSalvar
+      ? (estado.salvoEm ? "Progresso salvo neste computador, " + quando(estado.salvoEm) + "." : "Seu progresso fica salvo neste computador.")
+      : "Este navegador não está salvando o progresso."}</p>`;
+}
+
+function desenhaTopo() {
+  const fz = totalFeitos(), tot = TODOS.length;
+  document.getElementById("contagem").textContent = `${fz} de ${tot} passos`;
+  document.getElementById("barraGeral").style.width = Math.round(fz / tot * 100) + "%";
+  document.getElementById("marcaTopo").innerHTML = (temLogo
+    ? '<img src="logo.png" alt="Toca Imóveis">'
+    : '<span class="nome-toca">Toca Imóveis</span>') + '<span class="projeto">Projeto Estoque</span>';
+}
+
+function desenha(irPara) {
+  const r = rotaAtual();
+  const main = document.getElementById("conteudo");
+  main.innerHTML = ROTAS[r] ? ROTAS[r]() : secFase(+r.split("-")[1]);
+  desenhaMenu();
+  desenhaTopo();
+  document.body.classList.remove("menu-aberto");
+  document.getElementById("abreMenu").setAttribute("aria-expanded", "false");
+  const alvo = irPara && document.getElementById("passo-" + irPara.replace(".", "-"));
+  if (alvo) alvo.scrollIntoView({ block: "start" });
+  else window.scrollTo(0, 0);
+}
+
+/* Botão voltar do navegador (quando o endereço está disponível) */
+function sincroniza() {
+  const r = rotaDoEndereco();
+  if (r && r !== rota) { rota = r; desenha(); }
+}
+window.addEventListener("popstate", sincroniza);
+window.addEventListener("hashchange", sincroniza);
+
+/* -------------------------------- Ações ----------------------------------- */
+function avisa(texto) {
+  const t = document.getElementById("toast");
+  t.textContent = texto;
+  t.classList.add("visivel");
+  clearTimeout(avisa.t);
+  avisa.t = setTimeout(() => t.classList.remove("visivel"), 2200);
+}
+async function copia(texto, ok) {
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch (e) {
+    const a = document.createElement("textarea");
+    a.value = texto; a.style.position = "fixed"; a.style.opacity = "0";
+    document.body.appendChild(a); a.select();
+    try { document.execCommand("copy"); } catch (e2) {}
+    a.remove();
+  }
+  avisa(ok);
+}
+function resumoProgresso() {
+  const fz = totalFeitos(), tot = TODOS.length, prox = proximoPasso();
+  const linhas = [
+    "Projeto Estoque Toca" + (estado.nome ? " | " + estado.nome : ""),
+    `Concluídos: ${fz} de ${tot} passos (${Math.round(fz / tot * 100)}%)`,
+    ...FASES.map(f => `Fase ${f.n} (${f.titulo}): ${feitosDa(f)}/${f.passos.length}`),
+    prox ? `Próximo passo: ${prox.id} ${prox.t}` : "Trilha concluída"
+  ];
+  return linhas.join("\n");
+}
+
+document.addEventListener("click", e => {
+  const interno = e.target.closest('a[href^="#"]');
+  if (interno) {
+    e.preventDefault();
+    vaiPara(interno.getAttribute("href").slice(1), interno.dataset.ir);
+    return;
+  }
+  const el = e.target.closest("[data-tela],[data-copiar],[data-cor],[data-acao],button.video-capa,#abreMenu");
+  if (!el) {
+    if (document.body.classList.contains("menu-aberto") && !e.target.closest(".lateral")) document.body.classList.remove("menu-aberto");
+    return;
+  }
+  if (el.id === "abreMenu") {
+    const aberto = document.body.classList.toggle("menu-aberto");
+    el.setAttribute("aria-expanded", String(aberto));
+  } else if (el.dataset.acao === "resumo") {
+    copia(resumoProgresso(), "Resumo copiado. Cole na mensagem para o gestor.");
+  } else if (el.dataset.acao === "baixar") {
+    const blob = new Blob([JSON.stringify({ app: "estoque-toca", versao: 1, ...estado }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `progresso-estoque-toca-${chaveDia()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    avisa("Cópia baixada. Guarde o arquivo.");
+  } else if (el.dataset.acao === "apagar") {
+    if (el.dataset.certeza) {
+      estado = normaliza({}); salvar(); desenha();
+      avisa("Progresso apagado.");
+    } else {
+      el.dataset.certeza = "1";
+      el.textContent = "Clique de novo para apagar tudo";
+      setTimeout(() => { if (el.isConnected) { delete el.dataset.certeza; el.textContent = "Apagar todo o progresso"; } }, 4000);
+    }
+  } else if (el.dataset.tela) {
+    telaAtiva = el.dataset.tela;
+    const y = window.scrollY;
+    document.getElementById("conteudo").innerHTML = secTelas();
+    window.scrollTo(0, y);
+    const sel = document.querySelector('[data-tela][aria-selected="true"]');
+    if (sel) sel.focus();
+  } else if (el.dataset.copiar === "tutor") {
+    copia(TUTOR, "Texto copiado. Cole no ChatGPT.");
+  } else if (el.dataset.cor) {
+    copia(el.dataset.cor, el.dataset.cor + " copiado");
+  } else if (el.classList.contains("video-capa")) {
+    const caixa = el.parentElement, id = caixa.dataset.video;
+    const quadro = document.createElement("iframe");
+    quadro.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+    quadro.title = el.getAttribute("aria-label").replace("Assistir: ", "");
+    quadro.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+    quadro.allowFullscreen = true;
+    quadro.referrerPolicy = "strict-origin-when-cross-origin";
+    caixa.classList.add("tocando");
+    el.replaceWith(quadro);
+  }
+});
+
+document.addEventListener("change", e => {
+  const caixa = e.target.closest("[data-passo]");
+  if (caixa) {
+    const id = caixa.dataset.passo;
+    if (caixa.checked) estado.feitos[id] = Date.now(); else delete estado.feitos[id];
+    salvar();
+    const li = caixa.closest(".passo");
+    li.classList.toggle("feito", caixa.checked);
+    li.querySelector(".passo-num").textContent = caixa.checked ? "✓" : id;
+    const f = FASES[+id.split(".")[0]];
+    const conta = document.getElementById("contaFase");
+    if (conta) conta.textContent = `${feitosDa(f)} de ${f.passos.length}`;
+    desenhaMenu(); desenhaTopo();
+    if (caixa.checked && feitosDa(f) === f.passos.length) avisa(`Fase ${f.n} concluída`);
+  }
+  if (e.target.id === "arquivoCopia" && e.target.files[0]) {
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      try {
+        const dados = JSON.parse(leitor.result);
+        if (!dados || dados.app !== "estoque-toca") throw new Error("arquivo de outro tipo");
+        estado = normaliza(dados); salvar(); desenha();
+        avisa("Progresso restaurado.");
+      } catch (erro) { avisa("Este arquivo não é uma cópia do progresso."); }
+    };
+    leitor.readAsText(e.target.files[0]);
+  }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "nome") { estado.nome = e.target.value.trim().slice(0, 40); salvar(); }
+  if (e.target.id === "diarioHoje") {
+    const texto = e.target.value.slice(0, 4000);
+    if (texto.trim()) estado.diario[chaveDia()] = texto; else delete estado.diario[chaveDia()];
+    salvar();
+  }
+});
+
+/* -------------------------------- Início ---------------------------------- */
+const teste = new Image();
+teste.onload = () => { temLogo = true; desenha(); };
+teste.src = "logo.png";
+desenha();
+</script>
+</body>
+</html>
